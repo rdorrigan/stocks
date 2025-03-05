@@ -10,7 +10,7 @@ import os
 import glob
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
-
+PROD = True
 # Initialize the app
 app = dash.Dash(__name__)
 server = app.server  # Needed for deployment
@@ -43,7 +43,10 @@ app.layout = html.Div([
     dcc.Graph(id="stock-price-chart"),
     dcc.Graph(id="prediction-chart"),
 ])
-SAVE_DIR = os.path.join(os.environ['USERPROFILE'],'Documents/Python Scripts/Stocks/')
+if not PROD:
+    SAVE_DIR = os.path.join(os.getenv('USERPROFILE',''),'Documents/Python Scripts/Stocks/')
+else:
+    SAVE_DIR = ''
 def stock_data_file_formatter(ticker):
     dt = datetime.now().isoformat(timespec='seconds').replace(':','_')
     return os.path.join(SAVE_DIR,f'{ticker} stock_data {dt}.csv')
@@ -62,18 +65,21 @@ def fetch_stock_data(ticker):
         stock_data.to_csv(stock_data_file_formatter(ticker))
     def read_stock_data(file):
         return pd.read_csv(file,index_col=[0,1])
-    now = datetime.now()
-    latest_file = get_latest_stock_data_file(ticker)
-    if latest_file:
-        file_timestamp = get_file_timestamp(latest_file)
-        if (now - file_timestamp).total_seconds > 60 ** 2:
+    if not PROD:
+        now = datetime.now()
+        latest_file = get_latest_stock_data_file(ticker)
+        if latest_file:
+            file_timestamp = get_file_timestamp(latest_file)
+            if (now - file_timestamp).total_seconds > 60 ** 2:
+                stock_data = get_new_data(ticker)
+                save_new_data(stock_data)
+            else:
+                stock_data = read_stock_data(latest_file)            
+        else:
             stock_data = get_new_data(ticker)
             save_new_data(stock_data)
-        else:
-            stock_data = read_stock_data(latest_file)            
     else:
         stock_data = get_new_data(ticker)
-        save_new_data(stock_data)
     
 
     stock_data.columns = stock_data.columns.droplevel(1)
@@ -167,6 +173,6 @@ def update_graphs(selected_stock):
 # Run the app
 if __name__ == "__main__":
     try:
-        app.run_server(debug=True) #, host="0.0.0.0", port=PORT
+        app.run_server(debug=not PROD) #, host="0.0.0.0", port=PORT
     except Exception as e:
         print(f"Error starting server: {e}")

@@ -12,14 +12,14 @@ import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
 PROD = True
 # Initialize the app
-app = dash.Dash(__name__)
-server = app.server  # Needed for deployment
+dash_app = dash.Dash(__name__)
+server = dash_app.server  # Needed for deployment
 
 # Ensure a valid port is assigned
 PORT = int(os.environ.get("PORT", 8050))
 
 # Layout
-app.layout = html.Div([
+dash_app.layout = html.Div([
     html.H1("Stock Analysis Dashboard", style={'textAlign': 'center'}),
     
     dcc.Dropdown(
@@ -135,7 +135,7 @@ def train_arima_model(stock_data):
     return future_dates,future_forecast
 
 # Callback to update graphs
-@app.callback(
+@dash_app.callback(
     [Output("stock-price-chart", "figure"),
      Output("prediction-chart", "figure")],
     [Input("stock-selector", "value")]
@@ -173,6 +173,10 @@ def update_graphs(selected_stock):
 # Run the app
 if __name__ == "__main__":
     try:
-        app.run_server(debug=not PROD) #, host="0.0.0.0", port=PORT
+        if not PROD:
+            dash_app.run(debug=True) #, host="0.0.0.0", port=PORT
+        else:
+            from waitress import serve
+            serve(dash_app, host="0.0.0.0", port=8080)
     except Exception as e:
         print(f"Error starting server: {e}")

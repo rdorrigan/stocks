@@ -45,7 +45,8 @@ app.layout = html.Div([
 ])
 SAVE_DIR = os.path.join(os.environ['USERPROFILE'],'Documents/Python Scripts/Stocks/')
 def stock_data_file_formatter(ticker):
-    return os.path.join(SAVE_DIR,f'{ticker} stock_data {datetime.now().isoformat(timespec='seconds').replace(':','_')}.csv')
+    dt = datetime.now().isoformat(timespec='seconds').replace(':','_')
+    return os.path.join(SAVE_DIR,f'{ticker} stock_data {dt}.csv')
 def get_latest_stock_data_file(ticker):
     files = glob.glob(f'{ticker}*')
     if files:

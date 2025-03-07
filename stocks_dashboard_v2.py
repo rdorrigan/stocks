@@ -1,6 +1,4 @@
-from time import sleep
-# import dash
-from dash import Dash, dcc, html, Input, Output, State,Patch, no_update, clientside_callback
+from dash import Dash, dcc, html, Input, Output, State, Patch, no_update, clientside_callback
 from dash.dash_table import DataTable, FormatTemplate
 from dash_bootstrap_templates import load_figure_template
 import plotly.io as pio
@@ -22,17 +20,20 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 PROD = False
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.2.4/dbc.min.css"
 # adds  templates to plotly.io
-template_themes = ['vizro','vizro_dark']# Vizro is the best ['bootstrap','bootstrap_dark'], ["minty", "minty_dark"]
-load_figure_template(template_themes) 
+# Vizro is the best ['bootstrap','bootstrap_dark'], ["minty", "minty_dark"]
+template_themes = ['vizro', 'vizro_dark']
+load_figure_template(template_themes)
 # Initialize the app
-dash_app = Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.MINTY, dbc.icons.FONT_AWESOME,dbc_css])
+dash_app = Dash(__name__, external_stylesheets=[
+                dbc.themes.BOOTSTRAP, dbc.themes.MINTY, dbc.icons.FONT_AWESOME, dbc_css])
 # server = dash_app.server  # Needed for deployment
 
 
-color_mode_switch =  html.Span(
+color_mode_switch = html.Span(
     [
         dbc.Label(className="fa fa-moon", html_for="color-mode-switch"),
-        dbc.Switch( id="color-mode-switch", value=False, className="d-inline-block ms-1", persistence=True),
+        dbc.Switch(id="color-mode-switch", value=False,
+                   className="d-inline-block ms-1", persistence=True),
         dbc.Label(className="fa fa-sun", html_for="color-mode-switch"),
     ]
 )
@@ -82,12 +83,12 @@ drop_down_input = html.Div(children=[
     dbc.Alert(id="error-alert", color="danger",
               is_open=False, dismissable=True)  # Alert box
 ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'},
-className='dbc'
+    className='dbc'
 )
 
 price_graph = dcc.Graph(id="stock-price-chart")
 model_header = html.H4("Predictive Model Selector",
-                       style={'textAlign': 'center','margin':'10px'})
+                       style={'textAlign': 'center', 'margin': '10px'})
 model_selector = dcc.RadioItems(
     id="model-selector",
     options=[
@@ -99,7 +100,7 @@ model_selector = dcc.RadioItems(
     value="xgboost",
     labelStyle={'display': 'inline-block', 'margin': '10px'}
 )
-period_labels = ['5D','1M','3M','6M','1Y','2Y','3Y']
+period_labels = ['5D', '1M', '3M', '6M', '1Y', '2Y', '3Y']
 date_period_options = []
 for l in period_labels:
     period_options = {}
@@ -113,42 +114,48 @@ date_period_selector = dcc.RadioItems(
     labelStyle={'display': 'inline-block', 'margin': '10px'}
 )
 date_header = html.H4("Date Filters",
-                       style={'textAlign': 'center','margin':'10px'})
+                      style={'textAlign': 'center', 'margin': '10px'})
 
-model_div = html.Div(children=[model_header,model_selector],style={'display': 'flex', 'flexDirection': 'column','alignItems': 'left'})
-date_div = html.Div(children=[date_header,date_period_selector],style={'display': 'flex', 'flexDirection': 'column','alignItems': 'center'})# 
-model_date_div = date_div = html.Div(children=[model_div,date_div],style={'display': 'flex', 'flexDirection': 'row','alignItems': 'center'})# 
+model_div = html.Div(children=[model_header, model_selector], style={
+                     'display': 'flex', 'flexDirection': 'column', 'alignItems': 'left'})
+date_div = html.Div(children=[date_header, date_period_selector], style={
+                    'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+model_date_div = date_div = html.Div(children=[model_div, date_div], style={
+                                     'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'})
 # prediction_graph = dcc.Graph(id="prediction-chart")
 money = FormatTemplate.money(2)
 percent = FormatTemplate.percentage(2, True)
+
+
 def data_table_style(dark) -> dict:
     if not dark:
         return dict(style_data={
-        'color': 'black',
-        'backgroundColor': 'white'
+            'color': 'black',
+            'backgroundColor': 'white'
         },
-        style_data_conditional=[
+            style_data_conditional=[
             {
                 'if': {'row_index': 'odd'},
                 'backgroundColor': 'rgb(220, 220, 220)',
             }
         ],
-        style_header={
+            style_header={
             'backgroundColor': 'rgb(210, 210, 210)',
             'color': 'black',
             'fontWeight': 'bold'
         })
-    
+
     return dict(style_header={
-            'backgroundColor': 'rgb(30, 30, 30)',
-            'color': 'white'
-        },
-        style_data_conditional = [],
+        'backgroundColor': 'rgb(30, 30, 30)',
+        'color': 'white'
+    },
+        style_data_conditional=[],
         style_data={
             'backgroundColor': 'rgb(50, 50, 50)',
             'color': 'white'
-        })
-    
+    })
+
+
 data_table = DataTable(id='data-table', page_size=10, columns=[
     {'name': 'Date', 'id': 'Date', 'type': 'datetime'},
     {'name': 'Price', 'id': 'Close', 'format': money, "type": 'numeric'},
@@ -156,7 +163,7 @@ data_table = DataTable(id='data-table', page_size=10, columns=[
     {'name': '200 Day MA', 'id': '200_MA', 'format': money, "type": 'numeric'},
     {'name': 'Daily Return', 'id': 'Daily_Return',
         'format': percent, "type": 'numeric'},
-    {'name': 'Volatility', 'id': 'Volatility','format': percent, "type": 'numeric'}],
+    {'name': 'Volatility', 'id': 'Volatility', 'format': percent, "type": 'numeric'}],
     sort_action="native",
     filter_action='native',
     style_table={"overflowX": "auto"},
@@ -173,22 +180,22 @@ file_type_selector = dcc.RadioItems(id="file-type-selector", options=[{"label": 
 download_button = html.Button(
     "Download Data", id='download_prices', style={"marginTop": 20})
 download_component = dcc.Download(id='Download')
-file_div =  html.Div(children=[file_type_header, file_type_selector],
-                        id='file-div', style={'display': 'flex', 'flex-direction': 'column','margin' : '10px'},)
+file_div = html.Div(children=[file_type_header, file_type_selector],
+                    id='file-div', style={'display': 'flex', 'flex-direction': 'column', 'margin': '10px'},)
 download_div = html.Div(children=[download_button, download_component],
-                        id='download-div', style={'display': 'flex', 'flex-direction': 'column','margin' : '10px'},)
+                        id='download-div', style={'display': 'flex', 'flex-direction': 'column', 'margin': '10px'},)
 file_download_div = html.Div(children=[file_div, download_div],
-                        id='file-download-div', style={'display': 'flex', 'flex-direction': 'row','margin' : '10px'},)
+                             id='file-download-div', style={'display': 'flex', 'flex-direction': 'row', 'margin': '10px'},)
 # List of children components that will display in order
-children.extend([header,color_mode_switch, drop_down_header, drop_down_input,
+children.extend([header, color_mode_switch, drop_down_header, drop_down_input,
                  model_date_div,
                 #  model_header, model_selector,
-                   price_graph, file_download_div,
+                 price_graph, file_download_div,
                  data_table])
 
 
 # Layout
-dash_app.layout = html.Div(children=children,id='container', className="dbc")
+dash_app.layout = html.Div(children=children, id='container', className="dbc")
 if not PROD:
     SAVE_DIR = os.path.join(os.getenv('USERPROFILE', ''),
                             'Documents/Python Scripts/Stocks/')
@@ -443,6 +450,7 @@ def clean_input_box(stock_selected):
     return ""
 # Callback to update graphs
 
+
 def period_to_date_range(date_filter):
     '''
     Returns a tuple of min and max datetimes from the date_range for filter stock_data
@@ -453,23 +461,25 @@ def period_to_date_range(date_filter):
     elif date_filter == '1M':
         delta = 30
         return (datetime.today() - timedelta(days=delta)), datetime.today()
-    date_range = pd.date_range(end=datetime.today(),periods=int(date_filter[0]),freq=date_filter[1],normalize=True)
-    return date_range.min().to_pydatetime(),date_range.max().to_pydatetime()
+    date_range = pd.date_range(end=datetime.today(), periods=int(
+        date_filter[0]), freq=date_filter[1], normalize=True)
+    return date_range.min().to_pydatetime(), date_range.max().to_pydatetime()
+
 
 @dash_app.callback(
     [
         Output('data-table', "data"),
-        Output("stock-price-chart", "figure",allow_duplicate=True),
-        Output("error-store", "data")# Store error messages,
-    ],  
+        Output("stock-price-chart", "figure", allow_duplicate=True),
+        Output("error-store", "data")  # Store error messages,
+    ],
     [Input("stock-selector", "value"),
      Input('input-box', 'value'),
      Input("model-selector", "value"),
-     Input("date-period-selector", "value") ],
-     State("color-mode-switch", "value"),
-     prevent_initial_call=True
+     Input("date-period-selector", "value")],
+    State("color-mode-switch", "value"),
+    prevent_initial_call=True
 )
-def update_graphs(selected_stock, input_value, model_type,date_filter,switch_on):
+def update_graphs(selected_stock, input_value, model_type, date_filter, switch_on):
     '''
     Update line graphs with stock data and model predictions
     '''
@@ -482,15 +492,16 @@ def update_graphs(selected_stock, input_value, model_type,date_filter,switch_on)
     if stock_data is None or stock_data.empty:
         # dash.no_update
         return [{c: '' for c in stock_data_cols}], go.Figure(), f"Invalid stock symbol: {input_value}"
-    
+
     # Train model or get cached model predictions
     future_dates, future_prices = get_predictions(
         selected_stock, stock_data, model_type)
     stock_data = stock_data[stock_data_cols]
     stock_data[stock_data_cols[2:]] = stock_data[stock_data_cols[2:]].round(2)
-    if date_filter not in ('3Y',None):
+    if date_filter not in ('3Y', None):
         date_range = period_to_date_range(date_filter)
-        tdf = stock_data.loc[stock_data['Date'].between(*date_range,inclusive='both'),:]
+        tdf = stock_data.loc[stock_data['Date'].between(
+            *date_range, inclusive='both'), :]
         if not tdf.empty:
             stock_data = tdf.copy()
             del tdf
@@ -510,7 +521,7 @@ def update_graphs(selected_stock, input_value, model_type,date_filter,switch_on)
     stock_data['Date'] = stock_data['Date'].dt.date
     # update_theme(is_dark) #Does not work
     stock_fig.layout.template = get_template(switch_on)
-    return stock_data.sort_values(by='Date',ascending=False).to_dict('records'), stock_fig, None
+    return stock_data.sort_values(by='Date', ascending=False).to_dict('records'), stock_fig, None
     # print(type(future_dates),type(future_prices))
     # print(future_dates,future_prices)
     # pdf = pd.DataFrame(zip(future_dates,future_prices),columns=['Date','Predicted Price'])
@@ -542,11 +553,13 @@ def download_data(click, stock_selected, input_value, download_type, data):
         writer = dff.to_excel
     return dcc.send_data_frame(writer, f"{stock} Price Data.{download_type}")
 
+
 def get_template(switch_on):
     return pio.templates[template_themes[0]] if switch_on else pio.templates[template_themes[1]]
 
+
 @dash_app.callback(
-    Output("stock-price-chart", "figure",allow_duplicate=True),
+    Output("stock-price-chart", "figure", allow_duplicate=True),
     Output(data_table, 'style_header'),
     Output(data_table, 'style_data_conditional'),
     Output(data_table, 'style_data'),
@@ -558,13 +571,13 @@ def update_theme(switch_on):
     # When using Patch() to update the figure template, you must use the figure template dict
     # from plotly.io  and not just the template name
     # template_themes list is ordered light to dark
-    template = get_template(switch_on) #pio.templates[template_themes[0]] if switch_on else pio.templates[template_themes[1]]
+    # pio.templates[template_themes[0]] if switch_on else pio.templates[template_themes[1]]
+    template = get_template(switch_on)
 
     patched_figure = Patch()
     patched_figure["layout"]["template"] = template
     styles = data_table_style(not (switch_on))
-    return patched_figure,styles['style_header'],styles['style_data_conditional'],styles['style_data']
-
+    return patched_figure, styles['style_header'], styles['style_data_conditional'], styles['style_data']
 
 
 clientside_callback(
@@ -577,7 +590,6 @@ clientside_callback(
     Output("color-mode-switch", "id"),
     Input("color-mode-switch", "value"),
 )
-
 
 
 def parse_args():
@@ -596,6 +608,6 @@ if __name__ == "__main__":
             dash_app.run(debug=True)  # , host="0.0.0.0", port=PORT
         else:
             from waitress import serve
-            serve(dash_app, host="0.0.0.0", port=8080)
+            serve(dash_app.server, host="0.0.0.0", port=PORT)
     except Exception as e:
         print(f"Error starting server: {e}")

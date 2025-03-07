@@ -17,7 +17,7 @@ import glob
 import argparse
 import warnings
 warnings.filterwarnings('ignore', category=FutureWarning)
-PROD = False
+PROD = True
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.2.4/dbc.min.css"
 # adds  templates to plotly.io
 # Vizro is the best ['bootstrap','bootstrap_dark'], ["minty", "minty_dark"]

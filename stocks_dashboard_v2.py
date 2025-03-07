@@ -16,7 +16,7 @@ import os
 import glob
 import argparse
 import warnings
-from db.db import get_ticker_id,get_ticker_prices,insert_stock_price_data,upsert_stock_price_data,ticker_price_last_update
+from db.db import initial_setup,get_ticker_id,get_ticker_prices,insert_stock_price_data,upsert_stock_price_data,ticker_price_last_update
 warnings.filterwarnings('ignore', category=FutureWarning)
 PROD = True
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.2.4/dbc.min.css"
@@ -46,6 +46,7 @@ PORT = int(os.environ.get("PORT", 8050))
 
 # Fetch top stocks dynamically
 
+initial_setup()
 
 def get_top_stocks():
     tickers = ["AAPL", "MSFT", "TSLA", "AMZN", "NVDA", "GOOGL",

@@ -64,13 +64,15 @@ def get_top_stocks():
     return df
 
 
-def initial_setup():
+def initial_setup(override=False):
     df = get_top_stocks()
     # Call to create database and table on the first run
-    create_db(df,override=True)
-    # Example of loading data
-    df_from_db = load_data_from_db()
-    print(df_from_db)
+    create_db(df,override=override)
+    if not 'stock_prices' in list_tables():
+        create_stock_price_table()
+    # # Example of loading data
+    # df_from_db = load_data_from_db()
+    # print(df_from_db)
 
 
 

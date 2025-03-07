@@ -5,3 +5,8 @@ numpy
 yfinance
 scikit-learn
 waitress
+dash_bootstrap_templates
+dash_bootstrap_components
+xgboost
+lightgbm
+pmdarima

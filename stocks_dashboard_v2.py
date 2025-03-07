@@ -543,13 +543,13 @@ def update_graphs(selected_stock, input_value, model_type, date_filter, switch_o
     # Stock Price Chart
     stock_fig = go.Figure()
     stock_fig.add_trace(go.Scatter(x=stock_data["Date"], y=stock_data["Close"],
-                                   mode='lines', name='Closing Price', line=dict(color='blue')))
+                                   mode='lines', name='Closing Price', line=dict(color='blue' if switch_on else 'coral')))
     stock_fig.add_trace(go.Scatter(x=stock_data["Date"], y=stock_data["50_MA"],
                                    mode='lines', name='50-Day MA', line=dict(color='red', dash='dot')))
     stock_fig.add_trace(go.Scatter(x=stock_data["Date"], y=stock_data["200_MA"],
                                    mode='lines', name='200-Day MA', line=dict(color='orange', dash='dot')))
     stock_fig.add_trace(go.Scatter(x=future_dates, y=future_prices,
-                                   mode='lines', name='Predicted Prices', line=dict(color='green', dash='dot')))
+                                   mode='lines', name='Predicted Prices', line=dict(color='green' if switch_on else 'magenta', dash='dot')))
     stock_fig.update_layout(
         title=f"{selected_stock} Stock Price & Moving Averages", xaxis_title="Date", yaxis_title="Price (USD)")
     # fig_df = pd.concat([stock_data[["Date","Close","50_MA","200_MA",]],pd.DataFrame(future_dates,future_prices,columns=['Date','Predicted_Price'])],sort=False)
@@ -630,6 +630,7 @@ clientside_callback(
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--prod', action='store_true')
+    parser.add_argument('-d', '--debug', action='store_true')
     return parser.parse_args()
 
 

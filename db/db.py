@@ -124,7 +124,7 @@ def upsert_stock_price_data(df):
             conn.execute(text("""
                 INSERT OR REPLACE INTO stock_prices (Ticker, Date, Open, High, Low, Close, Volume)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (row['Ticker'], row['Date'], row['Open'], row['High'], row['Low'], row['Close'], row['Volume'])))
+            """), (row['Ticker'], row['Date'], row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
 def replace_stock_price_data(df):
     engine = get_engine()
     df.to_sql('stock_prices', engine, if_exists='replace', index=False)

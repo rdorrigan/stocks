@@ -18,7 +18,7 @@ def create_db(df,override=False):
         metadata = MetaData()
 
         # Define symbols table (equivalent to a pandas DataFrame)
-        tickers_table = Table('tickers', metadata,
+        _ = Table('tickers', metadata,
                               Column('TickerID', Integer, primary_key=True),
                               Column('Ticker', String),
                               Column('Label', String),

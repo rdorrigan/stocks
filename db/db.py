@@ -124,7 +124,7 @@ def upsert_stock_price_data(df):
             text("""
             INSERT OR REPLACE INTO stock_prices 
             (Ticker, Date, Open, High, Low, Close, Volume)
-            VALUES (:ticker, :date, :open, :high, :low, :close, :volume)
+            VALUES (:Ticker, :Date, :Open, :High, :Low, :Close, :Volume)
             """), df.to_dict(orient='records')
             # [
             #     {"ticker": t[0], "date": t[1], "open": t[2], "high": t[3], "low": t[4], "close": t[5], "volume": t[6]}

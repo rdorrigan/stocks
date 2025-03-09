@@ -629,7 +629,7 @@ clientside_callback(
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--prod', action='store_true')
+    parser.add_argument('-p', '--prod', action='store_false')
     parser.add_argument('-d', '--debug', action='store_true')
     return parser.parse_args()
 
@@ -639,6 +639,8 @@ if __name__ == "__main__":
     args = parse_args()
     if args.prod:
         PROD = True
+    else:
+        PROD = False
     try:
         if not PROD:
             dash_app.run(debug=True)  # , host="0.0.0.0", port=PORT

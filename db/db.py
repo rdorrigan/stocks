@@ -120,7 +120,7 @@ def insert_stock_price_data(df):
 def upsert_stock_price_data(df):
     engine = get_engine()
     with engine.connect() as conn:
-        for _, tups in df.itertuples(index=False,name=None):
+        for tups in df.itertuples(index=False,name=None):
             conn.execute(text("""
                 INSERT OR REPLACE INTO stock_prices (Ticker, Date, Open, High, Low, Close, Volume)
                 VALUES (?, ?, ?, ?, ?, ?, ?)

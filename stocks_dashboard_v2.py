@@ -19,6 +19,7 @@ import warnings
 from db.db import initial_setup,get_ticker_id,get_ticker_prices,insert_stock_price_data,upsert_stock_price_data,ticker_price_last_update
 warnings.filterwarnings('ignore', category=FutureWarning)
 PROD = True
+DEPRECATED = False  
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.2.4/dbc.min.css"
 # adds  templates to plotly.io
 # Vizro is the best ['bootstrap','bootstrap_dark'], ["minty", "minty_dark"]
@@ -102,7 +103,7 @@ model_selector = dcc.RadioItems(
     value="xgboost",
     labelStyle={'display': 'inline-block', 'margin': '10px'}
 )
-period_labels = ['5D', '1M', '3M', '6M', '1Y', '2Y', '3Y']
+period_labels = ['5D', '1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y']
 date_period_options = []
 for l in period_labels:
     period_options = {}
@@ -244,10 +245,11 @@ def fetch_stock_data(ticker):
         '''
         Download stock data from yahoo finance.
         '''
-        stock_data = yf.download(ticker, period="3y", auto_adjust=True)
+        stock_data = yf.download(ticker, period="5y", auto_adjust=True)
         if stock_data is None or stock_data.empty:
             return None
-        if not PROD:
+        if DEPRECATED:
+        # if not PROD:
             save_new_data(stock_data)
         return stock_data
 
@@ -262,7 +264,8 @@ def fetch_stock_data(ticker):
         Read a saved csv
         '''
         return pd.read_csv(file, header=[0, 1], index_col=0)
-    if PROD:
+    if not DEPRECATED:
+    # if PROD:
         needs_update =  False
         stock_data = None
         ticker_id = get_ticker_id(ticker)
@@ -533,7 +536,7 @@ def update_graphs(selected_stock, input_value, model_type, date_filter, switch_o
         selected_stock, stock_data, model_type)
     stock_data = stock_data[stock_data_cols]
     stock_data[stock_data_cols[2:]] = stock_data[stock_data_cols[2:]].round(2)
-    if date_filter not in ('3Y', None):
+    if date_filter not in ('5Y', None):
         date_range = period_to_date_range(date_filter)
         tdf = stock_data.loc[stock_data['Date'].between(
             *date_range, inclusive='both'), :]
@@ -630,6 +633,7 @@ clientside_callback(
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--prod', action='store_false')
+    parser.add_argument('-dep', '--deprecated', action='store_true')
     parser.add_argument('-d', '--debug', action='store_true')
     return parser.parse_args()
 
@@ -641,8 +645,11 @@ if __name__ == "__main__":
         PROD = True
     else:
         PROD = False
+    if args.deprecated:
+        DEPRECATED = True
     try:
-        if not PROD:
+        # if not PROD:
+        if args.debug:
             dash_app.run(debug=True)  # , host="0.0.0.0", port=PORT
         else:
             from waitress import serve

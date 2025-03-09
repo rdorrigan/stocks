@@ -113,7 +113,7 @@ for l in period_labels:
 date_period_selector = dcc.RadioItems(
     id="date-period-selector",
     options=date_period_options,
-    value="3Y",
+    value=period_labels[-1],
     labelStyle={'display': 'inline-block', 'margin': '10px'}
 )
 date_header = html.H4("Date Filters",

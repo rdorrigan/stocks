@@ -120,6 +120,7 @@ def insert_stock_price_data(df):
 def upsert_stock_price_data(df):
     engine = get_engine()
     with engine.connect() as conn:
+        df['Date'] = df['Date'].dt.date
         conn.execute(
             text("""
             INSERT OR REPLACE INTO stock_prices 

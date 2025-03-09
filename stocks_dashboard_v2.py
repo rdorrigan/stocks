@@ -50,7 +50,7 @@ PORT = int(os.environ.get("PORT", 8050))
 initial_setup()
 
 def get_top_stocks():
-    tickers = ["AAPL", "MSFT", "TSLA", "AMZN", "NVDA", "GOOGL",
+    tickers = ["AAPL", "MSFT", "TSLA", "AMZN", "NVDA", "GOOGL", "NFLX",
                        "META", "BRK-B", "UNH", "XOM", "AMD", "APLD", "SOUN", "INTC",
                        "TSM"]
     stock_info = {ticker: yf.Ticker(ticker).info for ticker in tickers}

@@ -120,13 +120,27 @@ def insert_stock_price_data(df):
 def upsert_stock_price_data(df):
     engine = get_engine()
     with engine.connect() as conn:
-        for tups in df.itertuples(index=False,name=None):
-            if not isinstance(tups, tuple):  # Ensure `tups` is a tuple
-                raise ValueError(f"Unexpected data type: {type(tups)} - {tups}")
-            conn.execute(text("""
-                INSERT OR REPLACE INTO stock_prices (Ticker, Date, Open, High, Low, Close, Volume)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """), tups)
+        conn.execute(
+            text("""
+            INSERT OR REPLACE INTO stock_prices 
+            (Ticker, Date, Open, High, Low, Close, Volume)
+            VALUES (:ticker, :date, :open, :high, :low, :close, :volume)
+            """), df.to_dict(orient='records')
+            # [
+            #     {"ticker": t[0], "date": t[1], "open": t[2], "high": t[3], "low": t[4], "close": t[5], "volume": t[6]}
+            #     for t in df.itertuples(index=False, name=None)
+            # ]
+        )
+# def upsert_stock_price_data(df):
+#     engine = get_engine()
+#     with engine.connect() as conn:
+#         for tups in df.itertuples(index=False,name=None):
+#             if not isinstance(tups, tuple):  # Ensure `tups` is a tuple
+#                 raise ValueError(f"Unexpected data type: {type(tups)} - {tups}")
+#             conn.execute(text("""
+#                 INSERT OR REPLACE INTO stock_prices (Ticker, Date, Open, High, Low, Close, Volume)
+#                 VALUES (?, ?, ?, ?, ?, ?, ?)
+#             """), tups)
             # (row['Ticker'], row['Date'], row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
 def replace_stock_price_data(df):
     engine = get_engine()
@@ -134,7 +148,7 @@ def replace_stock_price_data(df):
 
 def get_ticker_id(ticker):
     query = f"SELECT ID FROM stock_prices WHERE Ticker = '{ticker}' LIMIT 1"
-    try:
+    try:    
         return query_stock_prices(query)
     except Exception as e:
         print(f"Database error: {e}")

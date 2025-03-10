@@ -7,52 +7,25 @@ from lightgbm import LGBMRegressor
 from pmdarima import auto_arima
 from datetime import timedelta, datetime
 import os
-import glob
 from .db import initial_setup, get_ticker_id, get_ticker_prices, insert_stock_price_data, upsert_stock_price_data, ticker_price_last_update
 
-SAVE_DIR = os.path.join(os.getenv('USERPROFILE', ''),
-                            'Documents/Python Scripts/Stocks/')
+
 initial_setup()
 # Cache model predictions
 predictions_cache = {}
 
-def get_top_stocks():
-    tickers = ["AAPL", "MSFT", "TSLA", "AMZN", "NVDA", "GOOGL", "NFLX",
-                       "META", "BRK-B", "UNH", "XOM", "AMD", "APLD", "SOUN", "INTC",
-                       "TSM"]
-    stock_info = {ticker: yf.Ticker(ticker).info for ticker in tickers}
-    sorted_stocks = sorted(stock_info.items(), key=lambda x: x[1].get(
-        "marketCap", 0), reverse=True)
-    return [{"label": f"{info['shortName']} ({ticker})", "value": ticker} for ticker, info in sorted_stocks]
 
 
-def stock_data_file_formatter(ticker):
+def get_new_data(ticker,**kwargs):
     '''
-    Create file name
+    Download stock data from yahoo finance.
     '''
-    dt = datetime.now().isoformat(timespec='seconds').replace(':', '_')
-    return os.path.join(SAVE_DIR, f'{ticker} stock_data {dt}.csv')
+    stock_data = yf.download(ticker, period=kwargs.pop('period',"5y"), auto_adjust=kwargs.pop('auto_adjust',True),multi_level_index=kwargs.pop('multi_level_index',False),**kwargs)
+    if stock_data is None or stock_data.empty:
+        return None
+    stock_data.reset_index(inplace=True)
+    return stock_data
 
-
-def get_latest_stock_data_file(ticker):
-    '''
-    Get the latest CSV file and remove any excess for the given ticker
-    '''
-    files = glob.glob(f'{SAVE_DIR}/{ticker}*')
-    if files:
-        latest_file = max(files, key=os.path.getmtime)
-        for f in files:
-            if f != latest_file:
-                os.remove(f)
-        return latest_file
-    return None
-
-
-def get_file_timestamp(latest_file):
-    '''
-    Parse timestamp
-    '''
-    return datetime.fromisoformat(latest_file.split('stock_data ')[1][:-4].replace('_', ':'))
 # Fetch Stock Data
 
 
@@ -61,81 +34,49 @@ def fetch_stock_data(ticker,deprecated=False):
     Download stock data from yahoo finance.
     Adding additional features for price prediction.
     '''
-    def get_new_data(ticker):
-        '''
-        Download stock data from yahoo finance.
-        '''
-        stock_data = yf.download(ticker, period="5y", auto_adjust=True)
-        if stock_data is None or stock_data.empty:
-            return None
-        if deprecated:
-            # if not PROD:
-            save_new_data(stock_data)
-        return stock_data
-
-    def save_new_data(stock_data):
-        '''
-        Save stock data
-        '''
-        stock_data.to_csv(stock_data_file_formatter(ticker))
-
-    def read_stock_data(file):
-        '''
-        Read a saved csv
-        '''
-        return pd.read_csv(file, header=[0, 1], index_col=0)
-    if not deprecated:
-        # if PROD:
-        needs_update = False
-        stock_data = None
-        ticker_id = get_ticker_id(ticker)
-        print(ticker_id)
-        if not ticker_id.empty:
-            last_update = datetime.fromisoformat(
-                ticker_price_last_update(ticker).iloc[0, 0])
-            print(last_update)
-            if last_update.date() < datetime.today().date():
-                needs_update = True
-            else:
-                # Query database for existing data
-                stock_data = get_ticker_prices(ticker)
-
-        if stock_data is None or stock_data.empty:
-            stock_data = get_new_data(ticker)
-            stock_data.columns = stock_data.columns.droplevel(1)
-            stock_data.reset_index(inplace=True)
-            sdf = stock_data.copy()
-
-            cols = sdf.columns.values.tolist()
-            sdf['Ticker'] = ticker
-            reorder = ['Ticker']
-            reorder.extend(cols)
-            sdf = sdf[reorder]
-            if needs_update:
-                upsert_stock_price_data(sdf)
-            else:
-                insert_stock_price_data(sdf)
-            del sdf
-
-    else:
-        now = datetime.now()
-        latest_file = get_latest_stock_data_file(ticker)
-        if latest_file:
-            file_timestamp = get_file_timestamp(latest_file)
-            if (now - file_timestamp).total_seconds() > 60 ** 2:
-                stock_data = get_new_data(ticker)
-
-            else:
-                stock_data = read_stock_data(latest_file)
+    
+    
+    needs_update = False
+    stock_data = None
+    ticker_id = get_ticker_id(ticker)
+    print(ticker_id)
+    if not ticker_id.empty:
+        last_update = datetime.fromisoformat(
+            ticker_price_last_update(ticker).iloc[0, 0])
+        print(last_update)
+        if last_update.date() < datetime.today().date():
+            needs_update = True
         else:
-            stock_data = get_new_data(ticker)
-        stock_data.columns = stock_data.columns.droplevel(1)
-        stock_data.reset_index(inplace=True)
+            # Query database for existing data
+            stock_data = get_ticker_prices(ticker)
+
+    if stock_data is None or stock_data.empty or needs_update:
+        stock_data = get_new_data(ticker)
+        # stock_data.columns = stock_data.columns.droplevel(1)
+        # stock_data.reset_index(inplace=True)
+        sdf = stock_data.copy()
+
+        cols = sdf.columns.values.tolist()
+        sdf['Ticker'] = ticker
+        reorder = ['Ticker']
+        reorder.extend(cols)
+        sdf = sdf[reorder]
+        if needs_update:
+            upsert_stock_price_data(sdf)
+        else:
+            insert_stock_price_data(sdf)
+        del sdf
 
     if stock_data is None or stock_data.empty:
         return None
     print(stock_data.head())
     stock_data["Date"] = pd.to_datetime(stock_data["Date"])
+    return add_features(stock_data)
+
+def add_features(stock_data):
+    '''
+    Add features (metrics) for the predictive model
+    '''
     stock_data.sort_values("Date", inplace=True)
     stock_data = stock_data[['Date', 'Close']]
     # Calculate Moving Averages
@@ -148,7 +89,6 @@ def fetch_stock_data(ticker,deprecated=False):
     stock_data["Volatility"] = stock_data["Daily_Return"].rolling(
         window=10, min_periods=1).std()
     stock_data["Close"] = stock_data["Close"].round(2)
-    # print(stock_data.dtypes)
     return stock_data
 
 

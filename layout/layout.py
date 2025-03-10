@@ -7,7 +7,8 @@ import yfinance as yf
 import pandas as pd
 import plotly.graph_objs as go
 from datetime import timedelta, datetime
-from data.data import fetch_stock_data, get_predictions, get_top_stocks
+from data.data import fetch_stock_data, get_predictions
+from data.db import query_db
 
 template_themes = ['vizro', 'vizro_dark']
 load_figure_template(template_themes)
@@ -35,11 +36,19 @@ def create_stock_selector():
     '''
     Stock dropdown and input box
     '''
+
+    odf = query_db('select ticker,label from tickers order by MarketCap desc')
+    odf = odf.rename(columns={'Ticker':'value','Label':'label'})
+    print(odf)
+    options = odf.to_dict('records')
+    print(options)
+    del odf
+
     drop_down_header = html.H4("Stock Selector", style={'textAlign': 'center', 'margin': '10px'})
     drop_down_input = html.Div([
         dcc.Dropdown(
             id="stock-selector",
-            options=get_top_stocks(),
+            options=options,
             value="AAPL",
             clearable=False,
             style={'width': '50%', 'margin': 'auto'},
@@ -58,7 +67,7 @@ def create_stock_selector():
     ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'}, className='dbc')
     
     return html.Div([drop_down_header, drop_down_input])
-def create_stock_card(price="", pct=""):
+def create_stock_card(summary_date='',price="", pct=""):
     '''
     Display latest closing price and the percentage change from the first closing price
     '''
@@ -67,20 +76,22 @@ def create_stock_card(price="", pct=""):
     if not isinstance(pct, str):
         pct = f'{pct:.2%}'
     print(price,pct)
-    summary = html.H4("Summary", style={
+    summary_header = html.H4(f"Summary as of {summary_date}", style={
                       'textAlign': 'center', 'margin': '10px'})
     summary_price = html.H5(price, id='summary-price',
-                            style={'textAlign': 'center', 'margin': '5px'})
+                            style={'textAlign': 'center', 'margin': '10px'})
     summary_pct = html.H5(pct, 'summary-pct',
-                          style={'textAlign': 'center', 'margin': '5px'})
-
-    return html.Div([summary, summary_price, summary_pct], id='summary-card', style={
+                          style={'textAlign': 'center', 'margin': '10px'})
+    summaries = html.Div([summary_price,summary_pct],style={
         'display': 'flex', 'flexDirection': 'row', 'alignItems': 'center'})
+    return html.Div([summary_header, summaries], id='summary-card', style={
+        'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
 def create_model_selector():
     '''
     Filter selection of predictive models
     '''
-    model_header = html.H4("Predictive Model Selector", style={'textAlign': 'center', 'margin': '10px'})
+    model_header = html.H4("Predictive Model Selector", style={'textAlign': 'center', 'margin': 'auto',
+                                                               'display': 'flex', 'flexDirection': 'column', 'alignItems': 'left'})
     model_selector = dcc.RadioItems(
         id="model-selector",
         options=[
@@ -107,6 +118,9 @@ def create_date_selector():
     )
     date_header = html.H4("Date Filters", style={'textAlign': 'center', 'margin': '10px'})
     return html.Div([date_header, date_period_selector], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
+
+def selector_layout():
+    return html.Div([create_model_selector(), create_date_selector()], style={'display': 'flex', 'flexDirection': 'row', 'alignItems': 'left'})
 
 def create_price_graph():
     '''
@@ -186,8 +200,9 @@ def create_layout():
         create_header(),
         create_stock_selector(),
         create_stock_card(),
-        create_model_selector(),
-        create_date_selector(),
+        # create_model_selector(),
+        # create_date_selector(),
+        selector_layout(),
         create_price_graph(),
         create_file_download_section(),
         create_data_table()
@@ -276,13 +291,14 @@ def update_graphs(selected_stock, input_value, model_type, date_filter, switch_o
         if not tdf.empty:
             stock_data = tdf.copy()
             del tdf
+    summary_date = stock_data['Date'].max()
     summary_price = stock_data.loc[stock_data['Date']
-                                   == stock_data['Date'].max(), 'Close']#.iloc[0]
+                                   == summary_date, 'Close']#.iloc[0]
     print(summary_price)
     summary_price = summary_price.values[0]
     print(summary_price)
     summary_pct = stock_data.loc[stock_data['Date'].isin(
-        [stock_data['Date'].min(), stock_data['Date'].max()]), 'Close'].pct_change()#.values[1]
+        [stock_data['Date'].min(), summary_date]), 'Close'].pct_change()#.values[1]
     print(summary_pct)
     summary_pct = summary_pct.values[1]
     
@@ -300,10 +316,10 @@ def update_graphs(selected_stock, input_value, model_type, date_filter, switch_o
     stock_fig.update_layout(
         title=f"{selected_stock} Stock Price & Moving Averages", xaxis_title="Date", yaxis_title="Price (USD)")
     # fig_df = pd.concat([stock_data[["Date","Close","50_MA","200_MA",]],pd.DataFrame(future_dates,future_prices,columns=['Date','Predicted_Price'])],sort=False)
-    stock_data['Date'] = stock_data['Date'].dt.date
+    stock_data['Date'] = stock_data['Date'].dt.normalize().dt.date
     # update_theme(is_dark) #Does not work
     stock_fig.layout.template = get_template(switch_on)
-    return stock_data.sort_values(by='Date', ascending=False).to_dict('records'), stock_fig, create_stock_card(summary_price, summary_pct), None
+    return stock_data.sort_values(by='Date', ascending=False).to_dict('records'), stock_fig, create_stock_card(summary_date.date(),summary_price, summary_pct), None
     # print(type(future_dates),type(future_prices))
     # print(future_dates,future_prices)
     # pdf = pd.DataFrame(zip(future_dates,future_prices),columns=['Date','Predicted Price'])

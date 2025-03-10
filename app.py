@@ -43,6 +43,8 @@ if __name__ == "__main__":
     try:
         # if not PROD:
         if args.debug:
+            from yfinance import enable_debug_mode
+            enable_debug_mode()
             dash_app.run(debug=True)  # , host="0.0.0.0", port=PORT
         else:
             from waitress import serve

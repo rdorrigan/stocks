@@ -243,7 +243,7 @@ def period_to_date_range(date_filter):
     if date_filter[1] == 'Y':
         delta = int(date_filter[0]) * 365
         return (datetime.today() - timedelta(days=delta)), datetime.today()
-    elif date_filter[1] == '1M':
+    elif date_filter[1] == 'M':
         delta = int(date_filter[0]) * 30
         return (datetime.today() - timedelta(days=delta)), datetime.today()
     date_range = pd.date_range(end=datetime.today(), periods=int(
